@@ -1,0 +1,84 @@
+services:
+  node1:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.node
+    container_name: docker-node1
+    environment:
+      - NODE_ID=node1
+      - PORT=5001
+      - PEERS=node2:5002,node3:5003
+    ports:
+      - "5001:5001"
+    volumes:
+      - ../data/node1:/app/data
+    networks:
+      - dsync_net
+    command: uvicorn src.http_server:app --host 0.0.0.0 --port 5001
+
+  node2:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.node
+    container_name: docker-node2
+    environment:
+      - NODE_ID=node2
+      - PORT=5002
+      - PEERS=node1:5001,node3:5003
+    ports:
+      - "5002:5002"
+    volumes:
+      - ../data/node2:/app/data
+    networks:
+      - dsync_net
+    command: uvicorn src.http_server:app --host 0.0.0.0 --port 5002
+
+  node3:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.node
+    container_name: docker-node3
+    environment:
+      - NODE_ID=node3
+      - PORT=5003
+      - PEERS=node1:5001,node2:5002
+    ports:
+      - "5003:5003"
+    volumes:
+      - ../data/node3:/app/data
+    networks:
+      - dsync_net
+    command: uvicorn src.http_server:app --host 0.0.0.0 --port 5003
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: docker-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - C:/Users/HP VICTUS/Documents/Sister2/Tugas-2-Sinkronisasi-dan-distribusi-sistem/distributed-sync-system/config/:/etc/prometheus/
+    depends_on:
+      - node1
+      - node2
+      - node3
+    networks:
+      - dsync_net
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: docker-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - ../data/grafana:/var/lib/grafana
+    depends_on:
+      - prometheus
+    networks:
+      - dsync_net
+
+networks:
+  dsync_net:
+    driver: bridge

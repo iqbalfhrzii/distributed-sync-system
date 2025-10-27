@@ -1,0 +1,21 @@
+openapi: 3.0.0
+info:
+  title: Distributed Sync System API
+  version: 1.0.0
+  description: API specification for the distributed synchronization system
+
+paths:
+  /lock:
+    post:
+      summary: Acquire a lock
+      # ... rest of the API specification
+
+  /queue:
+    post:
+      summary: Enqueue a message
+      # ... rest of the API specification
+
+  /cache:
+    get:
+      summary: Get cached value
+      # ... rest of the API specification
