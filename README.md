@@ -29,107 +29,50 @@ A distributed system implementation featuring Raft consensus, distributed queue 
 - Redis
 - Prometheus & Grafana (for monitoring)
 
-## Project Structure
-
-```
-distributed-sync-system/
-├── src/
-│   ├── nodes/
-│   │   ├── base_node.py
-│   │   ├── lock_manager.py
-│   │   ├── queue_node.py
-│   │   └── cache_node.py
-│   ├── consensus/
-│   │   └── raft.py
-│   ├── communication/
-│   │   └── message_passing.py
-│   └── utils/
-│       ├── config.py
-│       └── metrics.py
-├── docker/
-│   ├── Dockerfile.node
-│   └── docker-compose.yml
-├── requirements.txt
-└── README.md
+## How to Use
+Run docker
+```powershell
+docker-compose up -d
 ```
 
-## Installation
-
-1. Clone the repository:
-```bash
-git clone [repository-url]
-cd distributed-sync-system
+```powershell
+docker ps
 ```
 
-2. Create a virtual environment (optional but recommended):
-```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+Distributed Lock Manager
+```powershell
+Invoke-WebRequest -Uri "http://localhost:5001/lock" `
+  -Method POST `
+  -Body '{"resource":"fileA","type":"exclusive","client":"client-1"}' `
+  -ContentType "application/json" | ConvertFrom-Json
 ```
 
-3. Install dependencies:
-```bash
-pip install -r requirements.txt
+```powershell
+Invoke-WebRequest -Uri "http://localhost:5002/lock" `
+  -Method POST `
+  -Body '{"resource":"fileA","type":"shared","client":"client-2"}' `
+  -ContentType "application/json" | ConvertFrom-Json
 ```
 
-## Running the System
-
-### Using Docker Compose
-
-1. Build and start the containers:
-```bash
-docker-compose -f docker/docker-compose.yml up --build
+Log Aktivitas Node
+```powershell
+docker logs docker-node1 --tail 30
 ```
 
-2. Monitor the nodes:
-- Access Prometheus: http://localhost:9090
-- Access Grafana: http://localhost:3000 (admin/admin)
-
-### Manual Setup
-
-1. Start individual nodes:
-```bash
-# Terminal 1
-export NODE_ID=node1 PORT=5001 PEERS=node2:5002,node3:5003
-python -m src.main
-
-# Terminal 2
-export NODE_ID=node2 PORT=5002 PEERS=node1:5001,node3:5003
-python -m src.main
-
-# Terminal 3
-export NODE_ID=node3 PORT=5003 PEERS=node1:5001,node2:5002
-python -m src.main
+Benchmarking Menggunakan Locust
+```powershell
+python -m locust -f load_test_scenarios.py --host http://localhost:5001
 ```
 
-## Testing
-
-Run the test suite:
-```bash
-pytest tests/
+Uji Kegagalan (Node Failure Test)
+```powershell
+docker stop docker-node1
 ```
 
-## Performance Testing
-
-Run load tests:
-```bash
-locust -f benchmarks/load_test_scenarios.py
+```powershell
+docker ps
 ```
 
-## Documentation
-
-- Full technical documentation is available in the `docs/` directory
-- API documentation available at `docs/api_spec.yaml`
-- Performance analysis report at `docs/performance_report.md`
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
+```powershell
+docker start docker-node1
+```
