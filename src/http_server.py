@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import asyncio
+from typing import Optional
 
 from .nodes.lock_manager import LockManager
 
@@ -36,12 +37,39 @@ async def release_lock(req: ReleaseRequest):
     return {"status": "released", "resource": req.resource}
 
 
+@app.post("/unlock")
+async def unlock(req: ReleaseRequest):
+    """Backward-compatible endpoint: unlock a resource (alias for /lock/release)."""
+    ok = await _LM.release(req.resource, req.client)
+    if not ok:
+        raise HTTPException(status_code=400, detail="unlock failed or not owner")
+    return {"status": "unlocked", "resource": req.resource}
+
+
 @app.get("/lock/status")
 def lock_status(resource: str):
     info = _LM.status(resource)
     if not info:
         return {"resource": resource, "locked": False}
     return {"resource": resource, "locked": True, "owner": info.owner, "type": info.lock_type}
+
+
+@app.get("/status")
+def status(resource: Optional[str] = None):
+    """Node status endpoint.
+
+    - If `resource` query param is provided, returns status for that resource.
+    - Otherwise returns a snapshot of all current locks and a simple OK flag.
+    """
+    if resource:
+        info = _LM.status(resource)
+        if not info:
+            return {"resource": resource, "locked": False}
+        return {"resource": resource, "locked": True, "owner": info.owner, "type": info.lock_type}
+
+    # full snapshot
+    locks = _LM.list_locks()
+    return {"status": "ok", "locks": locks}
 
 
 @app.get("/")

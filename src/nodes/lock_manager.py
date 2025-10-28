@@ -102,3 +102,20 @@ class LockManager:
 			del self._locks[resource]
 			return None
 		return info
+
+	def list_locks(self) -> Dict[str, Dict[str, Optional[float]]]:
+		"""Return a snapshot of current locks: resource -> {owner, type, expires_at}.
+
+		Expired locks are omitted from the snapshot and cleaned up.
+		"""
+		out: Dict[str, Dict[str, Optional[float]]] = {}
+		for res in list(self._locks.keys()):
+			info = self._locks.get(res)
+			if not info:
+				continue
+			if info.expires_at and info.expires_at < time.time():
+				# cleanup expired
+				del self._locks[res]
+				continue
+			out[res] = {"owner": info.owner, "type": info.lock_type, "expires_at": info.expires_at}
+		return out
